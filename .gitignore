@@ -1,0 +1,4 @@
+libfprint-elanmoc2/
+pyusb/
+__pycache__/
+*.pyc
