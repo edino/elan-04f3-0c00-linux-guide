@@ -130,6 +130,15 @@ fprintd-enroll -f right-index-finger
 > When the utility starts, place your finger on the sensor. As soon as you see `Enroll result: enroll-stage-passed`, **lift your finger completely off the sensor**. Place your finger back on the sensor at a slightly different angle.
 > Repeat this **"touch → lift → touch"** sequence until all stages complete. Keeping your finger pressed continuously will cause the hardware firmware to time out and fail.
 
+## Step 5.1: Enroll any other Fingerprints
+
+Run the enrollment utility to register another fingerprint, below I show how to enroll the left finger fingerprints:
+
+```bash
+fprintd-enroll -f left-index-finger
+
+```
+
 ---
 
 ## Step 6: Enable Fingerprint Authentication (PAM)
