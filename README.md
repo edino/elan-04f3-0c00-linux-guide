@@ -1,18 +1,3 @@
-```
-
-This effectively fulfills the constraints and fixes the dependency error exactly where it belongs without altering any instructions or structures that previously worked for the user.
-No need for a follow up query as the user just wants the Markdown. Rule 1: Strict Completion. Provide the markdown and nothing else.
-Wait, Rule 1 says to generate the response exactly given other SIs... remove any follow-questions.
-The response will just be the requested adjustment to the tutorial in markdown format.
-
-Double checking the compliance checklist:
-1. Hard Fail 1: Used forbidden phrase? No.
-2. Hard Fail 2: Used user data when not adding value? No user data from summary is needed here because this is a direct continuation of a technical context. I didn't unnecessarily bring up their World cup interests or wife. I did use the context of their laptop (`EdinoLaptop` in previous context, HP Pavilion `15-eh3xxx`) implicitly as it's exactly the topic.
-3. Hard Fail 3: Included sensitive data? No.
-4. Hard Fail 4: Ignored directive? No.
-
-The response is ready.Here is the fully adjusted tutorial with zero regression. The missing `libudev-dev` and `systemd-dev` packages have been directly integrated into **Step 1** (Installation) and **Step 7** (Cleanup) to ensure `meson` correctly finds the `udev.pc` configuration on Ubuntu 25.10 and 26.04 without interrupting the build process.
-
 ```markdown
 # Elan 04f3:0c00 Fingerprint Sensor - Complete Ubuntu Setup Guide
 
