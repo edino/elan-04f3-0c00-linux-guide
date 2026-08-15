@@ -1,5 +1,4 @@
-```markdown
-# Elan 04f3:0c00 Fingerprint Sensor - Complete Ubuntu Setup Guide
+## Elan 04f3:0c00 Fingerprint Sensor - Complete Ubuntu Setup Guide
 
 This guide provides the complete, step-by-step process to compile, install, and enable the community-developed `elanmoc2` driver for the unsupported Elan Match-on-Chip fingerprint sensor (`04f3:0c00`) on Ubuntu 25.10 and 26.04 LTS. It includes the crucial PAM authentication steps and build-cleanup instructions.
 
