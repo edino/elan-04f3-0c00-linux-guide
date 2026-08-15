@@ -1,28 +1,30 @@
-# Elan 04f3:0c00 Fingerprint Sensor - Linux Guide & Probe Tools
+```markdown
+# Elan 04f3:0c00 Fingerprint Sensor - Complete Ubuntu Setup Guide
 
-This repository provides a complete, step-by-step guide to compiling and installing the community-developed `elanmoc2` driver for the unsupported Elan Match-on-Chip fingerprint sensor (USB ID `04f3:0c00`) on Ubuntu/Debian-based distributions.
-
-It also includes a Python USB probing script for those interested in exploring the hardware communication protocol.
-
----
+This guide provides the complete, step-by-step process to compile, install, and enable the community-developed `elanmoc2` driver for the unsupported Elan Match-on-Chip fingerprint sensor (`04f3:0c00`) on Ubuntu 25.10 and 26.04 LTS. It includes the crucial PAM authentication steps and build-cleanup instructions.
 
 ## Prerequisites & Verification
 
-First, verify that your fingerprint reader is indeed the supported Elan Match-on-Chip model:
+First, verify that your fingerprint reader is the supported Elan Match-on-Chip model:
+
 ```bash
 lsusb | grep -i elan
+
 ```
-You should see an output containing the hardware ID:
-`Bus XXX Device YYY: ID 04f3:0c00 Elan Microelectronics Corp. ELAN:ARM-M4`
+
+*Expected Output:* `Bus XXX Device YYY: ID 04f3:0c00 Elan Microelectronics Corp. ELAN:ARM-M4`
 
 ---
 
-## Step 1: Install Build Dependencies
+## Step 1: Install Authentication Stack & Build Dependencies
 
-Before compiling, you need to install the required compilers and development libraries. On Ubuntu/Debian-based distributions (like Linux Mint), run the following command:
+You need both the base Ubuntu fingerprint daemon tools and the development libraries required to compile the custom driver.
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
+  fprintd \
+  libpam-fprintd \
   meson \
   ninja-build \
   libglib2.0-dev \
@@ -32,94 +34,139 @@ sudo apt-get install -y \
   libcairo2-dev \
   libgirepository1.0-dev \
   libssl-dev \
+  libudev-dev \
+  systemd-dev \
   libgudev-1.0-dev \
   gobject-introspection
+
 ```
 
 ---
 
 ## Step 2: Clone the Driver Repository
 
-Clone the specific community branch (`elanmoc2`) of the `libfprint` fork maintained by Davide Depau:
+Clone the specific community branch (`elanmoc2`) of the `libfprint` fork maintained by Davide Depau.
+
 ```bash
 git clone --depth 1 -b elanmoc2 https://gitlab.freedesktop.org/depau/libfprint.git
 cd libfprint
+
 ```
 
 ---
 
-## Step 3: Configure the Build
+## Step 3: Configure, Compile, and Install
 
-Configure the build directory using `meson`. We disable the API documentation (`-Ddoc=false`) to avoid extra dependency requirements (like `gtk-doc`):
+1. **Configure the build directory** (disabling API documentation to avoid extra dependencies):
 ```bash
 meson setup builddir -Ddoc=false
+
 ```
 
----
 
-## Step 4: Compile and Install
-
-Build the library and install it onto the system:
+2. **Compile the library**:
 ```bash
-# Compile the library
 ninja -C builddir
 
-# Install to the default system paths
-sudo ninja -C builddir install
 ```
 
----
 
-## Step 5: Post-Installation Setup
+3. **Install the driver** onto the system:
+```bash
+sudo ninja -C builddir install
 
-1. **Update Dynamic Linker Bindings:** Ensure that the newly installed library under `/usr/local/lib/x86_64-linux-gnu` is cached and preferred by the dynamic linker:
-   ```bash
-   sudo ldconfig
-   ```
+```
 
-2. **Restart the Fingerprint Service:** Restart the `fprintd` system daemon so it loads the newly installed driver:
-   ```bash
-   sudo systemctl restart fprintd
-   ```
+
 
 ---
 
-## Step 6: Enroll Your Fingerprint
+## Step 4: System Binding & Service Restart
+
+Ensure your OS recognizes the newly installed library and loads it into the active authentication daemon.
+
+1. **Update Dynamic Linker Bindings:**
+```bash
+sudo ldconfig
+
+```
+
+
+2. **Restart the Fingerprint Service:**
+```bash
+sudo systemctl restart fprintd
+
+```
+
+
+
+---
+
+## Step 5: Enroll Your Fingerprint
 
 Run the enrollment utility to register your fingerprint:
+
 ```bash
 fprintd-enroll -f right-index-finger
+
 ```
 
-### 💡 Crucial Enrollment Tip:
-* When the utility starts, place your finger on the sensor.
-* As soon as you see `Enroll result: enroll-stage-passed`, lift your finger completely off the sensor and wait a moment.
-* Place your finger back on the sensor (preferably at a slightly different angle to scan the sides).
-* Repeat this **"touch → lift → touch"** sequence until all enrollment stages complete.
-* Keeping your finger pressed continuously on the sensor will cause it to timeout with `enroll-remove-and-retry` warnings.
+> **⚠️ CRUCIAL ENROLLMENT TIP:**
+> When the utility starts, place your finger on the sensor. As soon as you see `Enroll result: enroll-stage-passed`, **lift your finger completely off the sensor**. Place your finger back on the sensor at a slightly different angle.
+> Repeat this **"touch → lift → touch"** sequence until all stages complete. Keeping your finger pressed continuously will cause the hardware firmware to time out and fail.
 
 ---
 
-## 🛠️ Hardware Reverse Engineering & Probing
+## Step 6: Enable Fingerprint Authentication (PAM)
 
-For developers interested in the underlying protocol, this repository includes `elan_probe.py`. This script utilizes `pyusb` to claim the device interface, detach any active kernel drivers, and probe the IN/OUT endpoints (`0x81-0x84`, `0x01-0x04`) of the ARM-M4 chip.
+This is the critical step to ensure your fingerprint can actually be used at the GNOME login screen and for `sudo` terminal commands.
 
-### Probing Script Overview
-The script performs the following core actions:
-1. Locates the device `04f3:0c00`.
-2. Detaches any kernel driver and claims Interface 0.
-3. Performs a ready/calibration check (`[0x40, 0xff, 0x00]`).
-4. Queries enrolled count (`[0x40, 0xff, 0x04]`).
-5. Queries metadata for finger indices `0-9` (`[0x40, 0xff, 0x12, index]`).
-6. Enters a MOC identify loop: sends `[0x40, 0xff, 0x03]` and reads from endpoint `0x84` to detect finger press and report the matched finger index or warnings (e.g. dirty, partial press).
+1. Run the Pluggable Authentication Modules (PAM) configuration tool:
+```bash
+sudo pam-auth-update
 
-### Running the Probe:
+```
+
+
+2. A graphical text menu will appear. Use the **Up/Down arrows** to navigate.
+3. Ensure the **Fingerprint authentication** profile has an asterisk **`[*]`** next to it. (Press the `Spacebar` to toggle it on if it is empty).
+4. Press `Tab` to highlight `<Ok>` and press `Enter`.
+
+*You can now lock your screen (`Super` + `L`) or open a new terminal and run a `sudo` command to test the scanner.*
+
+---
+
+## Step 7: Clean Up Build Environment (Optional)
+
+To keep your host OS pristine, you can safely remove the compilers and development headers now that the driver is permanently installed in `/usr/local/lib/`.
+
+```bash
+sudo apt-get autoremove --purge \
+  meson ninja-build libglib2.0-dev libgusb-dev \
+  libnss3-dev libpixman-1-dev libcairo2-dev \
+  libgirepository1.0-dev libssl-dev \
+  libudev-dev systemd-dev \
+  libgudev-1.0-dev gobject-introspection
+
+```
+
+---
+
+## Bonus: Hardware Reverse Engineering & Probing
+
+If you are interested in hardware communication protocols, you can use the `elan_probe.py` script included in the `gianniskokkinis` guide repo.
+
+This script utilizes `pyusb` to claim the device interface and probe the IN/OUT endpoints (`0x81-0x84`, `0x01-0x04`) of the ARM-M4 chip.
+
+**Running the Probe:**
+
 ```bash
 sudo python3 elan_probe.py
+
 ```
-*(Note: Root privileges are required to claim the USB interface without specific udev rules).*
 
----
+*Note: This performs a calibration check, queries enrolled count, queries metadata for finger indices, and detects partial/dirty presses directly from the hardware.*
 
-## Acknowledgments
-All credit for the `elanmoc2` driver code goes to Davide Depau and the `libfprint` community.
+```
+
+```
